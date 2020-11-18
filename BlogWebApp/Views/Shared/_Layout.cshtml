@@ -1,9 +1,15 @@
-﻿<!DOCTYPE html>
+﻿@using Microsoft.Extensions.Options;
+@using BlogWebApp
+@inject IOptions<AppSettings> _appSettings
+@{
+   var appSettings = _appSettings.Value ?? throw new ArgumentException(nameof(_appSettings));
+}
+<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>@ViewData["Title"] - Azure Cosmos DB Blog Example</title>
+    <title>@ViewData["Title"] - @appSettings.BlogName</title>
     <link rel="stylesheet" href="~/lib/bootstrap/css/bootstrap.min.css" />
     @RenderSection("Head", required: false)
 </head>
@@ -61,7 +67,7 @@
 
     <footer class="border-top footer text-muted">
         <div class="container">
-            &copy; @DateTime.Now.Year - Azure Cosmos DB Blog Example - <a asp-area="" asp-controller="Blog" asp-action="Privacy">Privacy</a>
+            &copy; @DateTime.Now.Year - @appSettings.BlogName - <a asp-area="" asp-controller="Blog" asp-action="Privacy">Privacy</a>
         </div>
     </footer>
     <script src="~/lib/jquery/jquery.min.js"></script>

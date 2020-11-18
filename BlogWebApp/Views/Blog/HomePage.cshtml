@@ -1,7 +1,13 @@
-﻿@model BlogHomePageViewModel
+﻿@using Microsoft.Extensions.Options;
+@using BlogWebApp
+@model BlogHomePageViewModel
+@inject IOptions<AppSettings> _appSettings
+@{
+    var appSettings = _appSettings.Value ?? throw new ArgumentException(nameof(_appSettings));
+}
 
 
-<h1>My Azure Cosmos DB Blog Sample Home Page</h1>
+<h1>@appSettings.BlogName Home Page</h1>
 
 
 @if (!Model.BlogPostsMostRecent.Any())

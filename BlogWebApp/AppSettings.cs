@@ -9,6 +9,7 @@ namespace BlogWebApp
     {
 
         public string AdminUsername { get; set; }
+        public string BlogName { get; set; }
 
     }
 }
