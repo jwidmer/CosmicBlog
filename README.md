@@ -1,3 +1,3 @@
-# Cosmic Blog
+# CosmicBlog
 
 ## About the code
