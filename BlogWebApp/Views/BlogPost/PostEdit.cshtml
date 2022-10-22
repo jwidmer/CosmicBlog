@@ -18,9 +18,10 @@
         <small id="contentHelp" class="form-text text-muted">Content of the blog post.</small>
     </div>
 
+    <canvas style="border:1px solid grey;" id="mycanvas"></canvas>
 
     <div class="mt-5">
-        <button class="btn btn-primary">Save</button>
+        <button class="btn btn-primary js-save-button">Save</button>
         <a href="/post/@Model.PostId" class="btn btn-light">Cancel</a>
     </div>
 
@@ -39,7 +40,140 @@
     <script src="~/lib/tinymce/tinymce.min.js"></script>
     <script type="text/javascript">
         tinymce.init({
-            selector: '#content'
+            selector: '#content',
+            init_instance_callback: function (editor) {
+                editor.on('paste', function (e) {
+
+                    let clipboardData = (event.clipboardData || window.clipboardData);
+                    var clipboardItems = clipboardData.items;
+                    for (var i = 0; i < clipboardItems.length; i++) {
+                        console.log(clipboardItems[i]);
+
+                        // Skip content if not image
+                        if (clipboardItems[i].type.indexOf("image") == -1) continue;
+                        // Retrieve image on clipboard as blob
+                        var imageBlob = clipboardItems[i].getAsFile();
+
+                        console.log(imageBlob);
+
+                        var canvas = document.getElementById("mycanvas");
+                        var ctx = canvas.getContext('2d');
+
+                        // Create an image to render the blob on the canvas
+                        var img = new Image();
+                        var imgToInsert = $('<img />');
+                        imgToInsert.addClass("js-new-image");
+
+                        // Once the image loads, render the img on the canvas
+                        img.onload = function () {
+                            // Update dimensions of the canvas with the dimensions of the image
+                            canvas.width = this.width;
+                            canvas.height = this.height;
+                            imgToInsert.attr('width', this.width);
+                            imgToInsert.attr('height', this.height);
+
+                            // Draw the image
+                            ctx.drawImage(img, 0, 0);
+                        };
+
+                        // Crossbrowser support for URL
+                        var URLObj = window.URL || window.webkitURL;
+
+                        // Creates a DOMString containing a URL representing the object given in the parameter
+                        // namely the original Blob
+
+                        // get image as blob url
+                        let blobURL = URL.createObjectURL(imageBlob);
+                        img.src = blobURL;
+                        imgToInsert.attr('src', blobURL);
+
+                        editor.execCommand('mceInsertContent', false, imgToInsert[0].outerHTML);
+
+                    }
+
+
+
+                    let pastedText = (event.clipboardData || window.clipboardData).getData('text');
+                    pastedText = pastedText.toUpperCase();
+
+                    // Let TinyMCE do the heavy lifting for inserting that content into the editor.
+                    editor.execCommand('mceInsertContent', false, pastedText);
+
+                    //do not allow the original paste to continue
+                    event.preventDefault();
+                });
+            }
+        });
+
+        $("#tinymce").on("paste", function (e) {
+            // access the clipboard using the api
+            var pastedData = e.originalEvent.clipboardData.getData('text');
+            console.log(pastedData);
+        });
+
+
+        $(".js-save-button").on("click", async function (e) {
+            //event.preventDefault();
+
+            // Get content of a specific editor:
+            var htmlString = tinymce.get('content').getContent();
+            var html = $($.parseHTML(htmlString));
+
+            return;
+
+            html.find(".js-new-image").each(async function (e) {
+                //upload the base64 into Azure Storage container
+                //update the img src to point to the new location
+                var imgSrc = $(this).attr("src");
+                console.log(imgSrc);
+
+                let imgBytes = await fetch(imgSrc);
+                console.log(imgBytes);
+
+                //check if there is an image to upload
+                if (imgBytes !== null) {
+                    //upload the image and then submit the family changes
+                    var formData = new FormData();
+                    formData.append("file", imgBytes);
+
+
+                    //$.ajax(
+                    //    {
+                    //        url: "/api/post/image/upload",
+                    //        data: formData,
+                    //        processData: false,
+                    //        contentType: false,
+                    //        type: "POST",
+                    //        success: function (data) {
+                    //            alert("Files Uploaded!");
+                    //        }
+                    //    });
+
+
+                    var xhr = new XMLHttpRequest();
+                    //xhr.responseType = "json";
+
+                    xhr.onload = function () {
+                        //console.log("status: " + xhr.status);
+                        if (xhr.status === 200) {
+                            console.log("onload");
+                            console.log(xhr);
+                            var imageUrl = JSON.parse(xhr.response).imageUrl;
+                            console.log(imageUrl);
+
+                            //TODO: remove the js-new-image class since now we have replaced the src with a url to the Azure Storage Container
+
+                        } else {
+                            alert("The image upload has failed.");
+                        }
+                    };
+
+                    xhr.open("POST", "/api/post/image/upload");
+                    //xhr.setRequestHeader('Content-Type', 'multipart/form-data')
+                    xhr.send(formData);
+                }
+            });
+
         });
     </script>
 }

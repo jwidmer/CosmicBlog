@@ -57,6 +57,11 @@ namespace BlogWebApp
             // builder.AddRazorRuntimeCompilation();
 
 
+            var storageBlobConnectionString = Configuration.GetValue<string>("StorageBlobConnectionString");
+            var storageManager = new ImageStorageManager(storageBlobConnectionString);
+            services.AddSingleton(storageManager);
+
+
             services.AddSingleton<IBlogCosmosDbService>(InitializeCosmosBlogClientInstanceAsync(Configuration.GetSection("CosmosDbBlog")).GetAwaiter().GetResult());
 
         }
